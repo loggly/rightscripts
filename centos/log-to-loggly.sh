@@ -2,6 +2,7 @@
 # DO NOT USE THIS SCRIPT
 # It uses APIs that are not yet documented and are not yet finalized.
 # Also, it is incomplete because I wam waiting for such public-documentation.
+# TODO(sissel): see if we can just make this a ruby script, not shell calling ruby.
 
 if ! lsb_release -d | grep -q 'CentOS' ; then
   echo "This script is for CentOS, you are running: $(lsb_release -d)"
