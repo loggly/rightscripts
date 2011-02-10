@@ -125,12 +125,12 @@ if [ -f "$flagfile" ] ; then
   exit 0
 fi
 
-log "Setting up syslog-ng to ship logs to logs.loggly.com:$port"
+log "Setting up syslog-ng to ship logs to ec2.logs.loggly.com:$port"
 
 cat >> /etc/syslog-ng/syslog-ng.conf << SYSLOGNG
 
 # Automatically added by $0
-destination d_loggly {tcp("logs.loggly.com" port($port));};  
+destination d_loggly {tcp("ec2.logs.loggly.com" port($port));};  
 log { source(s_sys); destination(d_loggly); };
 # End loggly config
 SYSLOGNG
