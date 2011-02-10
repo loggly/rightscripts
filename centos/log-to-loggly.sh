@@ -1,8 +1,12 @@
 #!/bin/sh
-# DO NOT USE THIS SCRIPT
-# It uses APIs that are not yet documented and are not yet finalized.
-# Also, it is incomplete because I wam waiting for such public-documentation.
 # TODO(sissel): see if we can just make this a ruby script, not shell calling ruby.
+
+# We have to list these here otherwise RightScale's script won't detect 
+# these variables as being inputs.
+# $LOGGLY_USER  - the username to access loggly with
+# $LOGGLY_PASS  - the password for the username above
+# $LOGGLY_SUBDOMAIN - your loggly subdomain name (foo.loggly.com, just 'foo')
+# $LOGGLY_INPUT_NAME - the name of the input
 
 progname=$(basename $0)
 log() {
