@@ -4,15 +4,20 @@
 # Also, it is incomplete because I wam waiting for such public-documentation.
 # TODO(sissel): see if we can just make this a ruby script, not shell calling ruby.
 
+progname=$(basename $0)
+log() {
+  logger -st $progname "$@"
+}
+
 if ! lsb_release -d | grep -q 'CentOS' ; then
-  echo "This script is for CentOS, you are running: $(lsb_release -d)"
+  log "This script is for CentOS, you are running: $(lsb_release -d)"
   exit 1
 fi
 
 syslog_ng_version="$(rpm -q syslog-ng --qf "%{version}")"
 found=$?
 if [ "$found" -ne 0 ] ; then
-  echo "syslog-ng not installed?"
+  log "syslog-ng not installed?"
   exit 1
 fi
 
@@ -56,11 +61,11 @@ def call_api(path, options={})
         path = url.path
         body = params(options[:params])
     end # case options[:method]
-    puts "#{options[:method]} #{path}"
+    STDERR.puts "http request => #{options[:method]} #{path}"
     req = method.new(path)
     req.basic_auth(USER, PASS)
     response = http.request(req, body)
-    puts response.body
+    STDERR.puts response.body
     return JSON.parse(response.body)
   end
 end # def call_api
@@ -70,7 +75,7 @@ def configure_input
   input = inputs.find { |i| i["name"] == INPUT_NAME }
 
   if input.nil?
-    puts "Creating new input: #{INPUT_NAME}"
+    STDERR.puts "Creating new input: #{INPUT_NAME}"
     result = call_api("/inputs", { 
       :method => :post,
       :params => {
@@ -80,22 +85,51 @@ def configure_input
       }
     })
     # If we get here, input creation successful.
-    puts "New input created successfully."
+    STDERR.puts "New input created successfully."
     input = result
   end
 
   input_id = input["id"]
   add_device_result = call_api("/inputs/#{input_id}/adddevice/", :method => :post)
-  puts "Added myself to the devices for input '#{INPUT_NAME}' (result: #{add_device_result.inspect})"
+  STDERR.puts "Added myself to the devices for input '#{INPUT_NAME}' (result: #{add_device_result.inspect})"
 
   return input
   #input_info = call_api("/inputs/#{input_id}")
 end
 
 input = configure_input
-# input["port"] contains the port we should log to
-# TODO(sissel): configure syslog-ng
+
+if input["port"].nil?
+  STDERR.puts "Couldn't find what port to talk to. Something wrong with loggly api?"
+  exit 1
+end
+
+puts input["port"]
 RUBY
 
-exec /opt/rightscale/sandbox/bin/ruby /tmp/loggly-setup.rb
+port=$(/opt/rightscale/sandbox/bin/ruby /tmp/loggly-setup.rb)
+exitcode=$?
 
+if [ "$exitcode" -ne 0 ] ; then
+  log "Loggly setup failed."
+  exit $exitcode
+fi
+
+flagfile="/etc/syslog-ng/loggly-setup-complete"
+if [ -f "$flagfile" ] ; then
+  log "Loggly setup already occurred, skipping"
+  exit 0
+fi
+
+log "Setting up syslog-ng to ship logs to logs.loggly.com:$port"
+
+cat >> /etc/syslog-ng/syslog-ng.conf << SYSLOGNG
+
+# Automatically added by $0
+destination d_loggly {tcp("logs.loggly.com" port($port));};  
+log { source(s_sys); destination(d_loggly); };
+# End loggly config
+SYSLOGNG
+
+service syslog-ng restart
+touch $flagfile
