@@ -135,5 +135,8 @@ log { source(s_sys); destination(d_loggly); };
 # End loggly config
 SYSLOGNG
 
+log "Restarting syslog-ng"
 service syslog-ng restart
+
+log "Successfully configured syslog-ng to ship logs to Loggly :)"
 touch $flagfile
