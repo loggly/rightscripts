@@ -1,4 +1,6 @@
 #!/bin/sh
+# This script will work for CentOS 5.4
+#
 # TODO(sissel): see if we can just make this a ruby script, not shell calling ruby.
 
 # We have to list these here otherwise RightScale's script won't detect 
@@ -111,7 +113,22 @@ end
 puts input["port"]
 RUBY
 
-port=$(/opt/rightscale/sandbox/bin/ruby /tmp/loggly-setup.rb)
+# Don't try to use rightscale's ruby sandbox, this will let us
+# use, more generally, any CentOS 5 system.
+#port=$(/opt/rightscale/sandbox/bin/ruby /tmp/loggly-setup.rb)
+
+# Install ruby if not present
+if ! which ruby > /dev/null 2>&1 ; then
+  yum install -y ruby
+fi
+
+# Install ruby-json if not present
+if ! rpm -q ruby-json ; then
+  yum install -y ruby-json
+fi
+
+# Configure the input and get the port to log to
+port=$(ruby /tmp/loggly-setup.rb)
 exitcode=$?
 
 if [ "$exitcode" -ne 0 ] ; then
@@ -126,7 +143,6 @@ if [ -f "$flagfile" ] ; then
 fi
 
 log "Setting up syslog-ng to ship logs to ec2.logs.loggly.com:$port"
-
 cat >> /etc/syslog-ng/syslog-ng.conf << SYSLOGNG
 
 # Automatically added by $0
