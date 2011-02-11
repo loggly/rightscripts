@@ -1,6 +1,11 @@
 #!/bin/sh
 # This script will work for CentOS 5.4
 #
+# How to use:
+#   On RightScale, add this as a RightScript.
+#   Else, run the script passing the variables below in on the environment:
+#     LOGGLY_USER=youruser LOGGLY_PASS=yourpass ... sh log-to-loggly.sh
+#
 # TODO(sissel): see if we can just make this a ruby script, not shell calling ruby.
 
 # We have to list these here otherwise RightScale's script won't detect 
@@ -117,14 +122,30 @@ RUBY
 # use, more generally, any CentOS 5 system.
 #port=$(/opt/rightscale/sandbox/bin/ruby /tmp/loggly-setup.rb)
 
+if ! rpm -q syslog-ng > /dev/null 2>&1 ;
+  yum install -y syslog-ng
+  if [ $? -ne 0 ] ; then
+    log "Failed installing syslog-ng?"
+    exit 1
+  fi
+fi
+
 # Install ruby if not present
 if ! which ruby > /dev/null 2>&1 ; then
   yum install -y ruby
+  if [ $? -ne 0 ] ; then
+    log "Failed installing ruby?"
+    exit 1
+  fi
 fi
 
 # Install ruby-json if not present
-if ! rpm -q ruby-json ; then
+if ! rpm -q ruby-json > /dev/null 2>&1 ; then
   yum install -y ruby-json
+  if [ $? -ne 0 ] ; then
+    log "Failed installing ruby-json?"
+    exit 1
+  fi
 fi
 
 # Configure the input and get the port to log to
