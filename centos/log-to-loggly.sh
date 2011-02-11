@@ -122,7 +122,7 @@ RUBY
 # use, more generally, any CentOS 5 system.
 #port=$(/opt/rightscale/sandbox/bin/ruby /tmp/loggly-setup.rb)
 
-if ! rpm -q syslog-ng > /dev/null 2>&1 ;
+if ! rpm -q syslog-ng > /dev/null 2>&1 ; then
   yum install -y syslog-ng
   if [ $? -ne 0 ] ; then
     log "Failed installing syslog-ng?"
